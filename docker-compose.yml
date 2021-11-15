@@ -1,0 +1,41 @@
+version: "3"
+services:
+  jenkins:
+    image: "jenkinsci/blueocean"
+    user: root
+    environment:
+      JAVA_OPTS: '-Dhudson.model.DirectoryBrowserSupport.CSP="default-src ''self''; script-src ''self'' ''unsafe-inline'' ''unsafe-eval''; style-src ''self'' ''unsafe-inline'';" -Djenkins.model.DirectoryBrowserSupport.CSP="default-src ''self''; script-src ''self'' ''unsafe-inline'' ''unsafe-eval''; style-src ''self'' ''unsafe-inline'';"'
+    environment:
+      - Asia/Taipei
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - jenkins_nw
+    expose:
+      - "8080"
+    ports:
+      - "50000:50000"
+    restart: unless-stopped
+  nginx:
+    image: "nginx:latest"
+    links:
+      - jenkins
+      - jenkins:jenkinssvc
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/ssl
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    environment:
+      - TZ=Asia/Taipei
+    networks:
+      - jenkins_nw
+    depends_on:
+      - jenkins
+    restart: unless-stopped
+networks:
+  jenkins_nw:
+    driver: bridge
